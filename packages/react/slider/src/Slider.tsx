@@ -10,7 +10,6 @@ import { useSize } from '@radix-ui/react-use-size';
 import { Primitive } from '@radix-ui/react-primitive';
 import { createCollection } from '@radix-ui/react-collection';
 
-import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
 
 type Direction = 'ltr' | 'rtl';
@@ -41,14 +40,15 @@ const [createSliderContext, createSliderScope] = createContextScope(SLIDER_NAME,
 ]);
 
 type SliderContextValue = {
-  name?: string;
-  disabled?: boolean;
+  name: string | undefined;
+  disabled: boolean | undefined;
   min: number;
   max: number;
   values: number[];
   valueIndexToChangeRef: React.MutableRefObject<number>;
   thumbs: Set<SliderThumbElement>;
   orientation: SliderProps['orientation'];
+  form: string | undefined;
 };
 
 const [SliderProvider, useSliderContext] = createSliderContext<SliderContextValue>(SLIDER_NAME);
@@ -72,6 +72,7 @@ interface SliderProps
   onValueChange?(value: number[]): void;
   onValueCommit?(value: number[]): void;
   inverted?: boolean;
+  form?: string;
 }
 
 const Slider = React.forwardRef<SliderElement, SliderProps>(
@@ -89,6 +90,7 @@ const Slider = React.forwardRef<SliderElement, SliderProps>(
       onValueChange = () => {},
       onValueCommit = () => {},
       inverted = false,
+      form,
       ...sliderProps
     } = props;
     const thumbRefs = React.useRef<SliderContextValue['thumbs']>(new Set());
@@ -152,6 +154,7 @@ const Slider = React.forwardRef<SliderElement, SliderProps>(
         thumbs={thumbRefs.current}
         values={values}
         orientation={orientation}
+        form={form}
       >
         <Collection.Provider scope={props.__scopeSlider}>
           <Collection.Slot scope={props.__scopeSlider}>
@@ -247,7 +250,7 @@ const SliderHorizontal = React.forwardRef<SliderHorizontalElement, SliderHorizon
     } = props;
     const [slider, setSlider] = React.useState<SliderImplElement | null>(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setSlider(node));
-    const rectRef = React.useRef<ClientRect>();
+    const rectRef = React.useRef<DOMRect>();
     const direction = useDirection(dir);
     const isDirectionLTR = direction === 'ltr';
     const isSlidingFromLeft = (isDirectionLTR && !inverted) || (!isDirectionLTR && inverted);
@@ -323,7 +326,7 @@ const SliderVertical = React.forwardRef<SliderVerticalElement, SliderVerticalPro
     } = props;
     const sliderRef = React.useRef<SliderImplElement>(null);
     const ref = useComposedRefs(forwardedRef, sliderRef);
-    const rectRef = React.useRef<ClientRect>();
+    const rectRef = React.useRef<DOMRect>();
     const isSlidingFromBottom = !inverted;
 
     function getValueFromPointer(pointerPosition: number) {
@@ -380,7 +383,7 @@ const SliderVertical = React.forwardRef<SliderVerticalElement, SliderVerticalPro
  * -----------------------------------------------------------------------------------------------*/
 
 type SliderImplElement = React.ElementRef<typeof Primitive.span>;
-type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
+type PrimitiveDivProps = React.ComponentPropsWithoutRef<typeof Primitive.div>;
 type SliderImplPrivateProps = {
   onSlideStart(event: React.PointerEvent): void;
   onSlideMove(event: React.PointerEvent): void;
@@ -460,7 +463,7 @@ const SliderImpl = React.forwardRef<SliderImplElement, SliderImplProps>(
 const TRACK_NAME = 'SliderTrack';
 
 type SliderTrackElement = React.ElementRef<typeof Primitive.span>;
-type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
+type PrimitiveSpanProps = React.ComponentPropsWithoutRef<typeof Primitive.span>;
 interface SliderTrackProps extends PrimitiveSpanProps {}
 
 const SliderTrack = React.forwardRef<SliderTrackElement, SliderTrackProps>(
@@ -557,7 +560,7 @@ const SliderThumbImpl = React.forwardRef<SliderThumbImplElement, SliderThumbImpl
     const [thumb, setThumb] = React.useState<HTMLSpanElement | null>(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setThumb(node));
     // We set this to true by default so that events bubble to forms without JS (SSR)
-    const isFormControl = thumb ? Boolean(thumb.closest('form')) : true;
+    const isFormControl = thumb ? context.form || !!thumb.closest('form') : true;
     const size = useSize(thumb);
     // We cast because index could be `-1` which would return undefined
     const value = context.values[index] as number | undefined;
@@ -619,6 +622,7 @@ const SliderThumbImpl = React.forwardRef<SliderThumbImplElement, SliderThumbImpl
               name ??
               (context.name ? context.name + (context.values.length > 1 ? '[]' : '') : undefined)
             }
+            form={context.form}
             value={value}
           />
         )}
@@ -631,7 +635,7 @@ SliderThumb.displayName = THUMB_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
-const BubbleInput = (props: Radix.ComponentPropsWithoutRef<'input'>) => {
+const BubbleInput = (props: React.ComponentPropsWithoutRef<'input'>) => {
   const { value, ...inputProps } = props;
   const ref = React.useRef<HTMLInputElement>(null);
   const prevValue = usePrevious(value);
@@ -654,8 +658,8 @@ const BubbleInput = (props: Radix.ComponentPropsWithoutRef<'input'>) => {
    * wrap it will not be able to access its value via the FormData API.
    *
    * We purposefully do not add the `value` attribute here to allow the value
-   * to be set programatically and bubble to any parent form `onChange` event.
-   * Adding the `value` will cause React to consider the programatic
+   * to be set programmatically and bubble to any parent form `onChange` event.
+   * Adding the `value` will cause React to consider the programmatic
    * dispatch a duplicate and it will get swallowed.
    */
   return <input style={{ display: 'none' }} {...inputProps} ref={ref} defaultValue={value} />;

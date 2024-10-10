@@ -7,7 +7,6 @@ import { usePrevious } from '@radix-ui/react-use-previous';
 import { Presence } from '@radix-ui/react-presence';
 import { Primitive } from '@radix-ui/react-primitive';
 
-import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
 
 /* -------------------------------------------------------------------------------------------------
@@ -23,7 +22,7 @@ type RadioContextValue = { checked: boolean; disabled?: boolean };
 const [RadioProvider, useRadioContext] = createRadioContext<RadioContextValue>(RADIO_NAME);
 
 type RadioElement = React.ElementRef<typeof Primitive.button>;
-type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;
+type PrimitiveButtonProps = React.ComponentPropsWithoutRef<typeof Primitive.button>;
 interface RadioProps extends PrimitiveButtonProps {
   checked?: boolean;
   required?: boolean;
@@ -40,13 +39,14 @@ const Radio = React.forwardRef<RadioElement, RadioProps>(
       disabled,
       value = 'on',
       onCheck,
+      form,
       ...radioProps
     } = props;
     const [button, setButton] = React.useState<HTMLButtonElement | null>(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setButton(node));
     const hasConsumerStoppedPropagationRef = React.useRef(false);
     // We set this to true by default so that events bubble to forms without JS (SSR)
-    const isFormControl = button ? Boolean(button.closest('form')) : true;
+    const isFormControl = button ? form || !!button.closest('form') : true;
 
     return (
       <RadioProvider scope={__scopeRadio} checked={checked} disabled={disabled}>
@@ -81,6 +81,7 @@ const Radio = React.forwardRef<RadioElement, RadioProps>(
             checked={checked}
             required={required}
             disabled={disabled}
+            form={form}
             // We transform because the input is absolutely positioned but we have
             // rendered it **after** the button. This pulls it back to sit on top
             // of the button.
@@ -101,7 +102,7 @@ Radio.displayName = RADIO_NAME;
 const INDICATOR_NAME = 'RadioIndicator';
 
 type RadioIndicatorElement = React.ElementRef<typeof Primitive.span>;
-type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
+type PrimitiveSpanProps = React.ComponentPropsWithoutRef<typeof Primitive.span>;
 export interface RadioIndicatorProps extends PrimitiveSpanProps {
   /**
    * Used to force mounting when more control is needed. Useful when
@@ -131,7 +132,7 @@ RadioIndicator.displayName = INDICATOR_NAME;
 
 /* ---------------------------------------------------------------------------------------------- */
 
-type InputProps = Radix.ComponentPropsWithoutRef<'input'>;
+type InputProps = React.ComponentPropsWithoutRef<'input'>;
 interface BubbleInputProps extends Omit<InputProps, 'checked'> {
   checked: boolean;
   control: HTMLElement | null;

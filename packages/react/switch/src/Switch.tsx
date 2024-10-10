@@ -7,7 +7,6 @@ import { usePrevious } from '@radix-ui/react-use-previous';
 import { useSize } from '@radix-ui/react-use-size';
 import { Primitive } from '@radix-ui/react-primitive';
 
-import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
 
 /* -------------------------------------------------------------------------------------------------
@@ -23,7 +22,7 @@ type SwitchContextValue = { checked: boolean; disabled?: boolean };
 const [SwitchProvider, useSwitchContext] = createSwitchContext<SwitchContextValue>(SWITCH_NAME);
 
 type SwitchElement = React.ElementRef<typeof Primitive.button>;
-type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;
+type PrimitiveButtonProps = React.ComponentPropsWithoutRef<typeof Primitive.button>;
 interface SwitchProps extends PrimitiveButtonProps {
   checked?: boolean;
   defaultChecked?: boolean;
@@ -42,13 +41,14 @@ const Switch = React.forwardRef<SwitchElement, SwitchProps>(
       disabled,
       value = 'on',
       onCheckedChange,
+      form,
       ...switchProps
     } = props;
     const [button, setButton] = React.useState<HTMLButtonElement | null>(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setButton(node));
     const hasConsumerStoppedPropagationRef = React.useRef(false);
     // We set this to true by default so that events bubble to forms without JS (SSR)
-    const isFormControl = button ? Boolean(button.closest('form')) : true;
+    const isFormControl = button ? form || !!button.closest('form') : true;
     const [checked = false, setChecked] = useControllableState({
       prop: checkedProp,
       defaultProp: defaultChecked,
@@ -88,6 +88,7 @@ const Switch = React.forwardRef<SwitchElement, SwitchProps>(
             checked={checked}
             required={required}
             disabled={disabled}
+            form={form}
             // We transform because the input is absolutely positioned but we have
             // rendered it **after** the button. This pulls it back to sit on top
             // of the button.
@@ -108,7 +109,7 @@ Switch.displayName = SWITCH_NAME;
 const THUMB_NAME = 'SwitchThumb';
 
 type SwitchThumbElement = React.ElementRef<typeof Primitive.span>;
-type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
+type PrimitiveSpanProps = React.ComponentPropsWithoutRef<typeof Primitive.span>;
 interface SwitchThumbProps extends PrimitiveSpanProps {}
 
 const SwitchThumb = React.forwardRef<SwitchThumbElement, SwitchThumbProps>(
@@ -130,7 +131,7 @@ SwitchThumb.displayName = THUMB_NAME;
 
 /* ---------------------------------------------------------------------------------------------- */
 
-type InputProps = Radix.ComponentPropsWithoutRef<'input'>;
+type InputProps = React.ComponentPropsWithoutRef<'input'>;
 interface BubbleInputProps extends Omit<InputProps, 'checked'> {
   checked: boolean;
   control: HTMLElement | null;

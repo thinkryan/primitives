@@ -13,7 +13,6 @@ import { Slottable } from '@radix-ui/react-slot';
 import { useControllableState } from '@radix-ui/react-use-controllable-state';
 import * as VisuallyHiddenPrimitive from '@radix-ui/react-visually-hidden';
 
-import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
 
 type ScopedProps<P = {}> = P & { __scopeTooltip?: Scope };
@@ -191,12 +190,14 @@ const Tooltip: React.FC<TooltipProps> = (props: ScopedProps<TooltipProps>) => {
 
   const handleOpen = React.useCallback(() => {
     window.clearTimeout(openTimerRef.current);
+    openTimerRef.current = 0;
     wasOpenDelayedRef.current = false;
     setOpen(true);
   }, [setOpen]);
 
   const handleClose = React.useCallback(() => {
     window.clearTimeout(openTimerRef.current);
+    openTimerRef.current = 0;
     setOpen(false);
   }, [setOpen]);
 
@@ -205,11 +206,17 @@ const Tooltip: React.FC<TooltipProps> = (props: ScopedProps<TooltipProps>) => {
     openTimerRef.current = window.setTimeout(() => {
       wasOpenDelayedRef.current = true;
       setOpen(true);
+      openTimerRef.current = 0;
     }, delayDuration);
   }, [delayDuration, setOpen]);
 
   React.useEffect(() => {
-    return () => window.clearTimeout(openTimerRef.current);
+    return () => {
+      if (openTimerRef.current) {
+        window.clearTimeout(openTimerRef.current);
+        openTimerRef.current = 0;
+      }
+    };
   }, []);
 
   return (
@@ -231,6 +238,7 @@ const Tooltip: React.FC<TooltipProps> = (props: ScopedProps<TooltipProps>) => {
           } else {
             // Clear the timer in case the pointer leaves the trigger before the tooltip is opened.
             window.clearTimeout(openTimerRef.current);
+            openTimerRef.current = 0;
           }
         }, [handleClose, disableHoverableContent])}
         onOpen={handleOpen}
@@ -252,7 +260,7 @@ Tooltip.displayName = TOOLTIP_NAME;
 const TRIGGER_NAME = 'TooltipTrigger';
 
 type TooltipTriggerElement = React.ElementRef<typeof Primitive.button>;
-type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;
+type PrimitiveButtonProps = React.ComponentPropsWithoutRef<typeof Primitive.button>;
 interface TooltipTriggerProps extends PrimitiveButtonProps {}
 
 const TooltipTrigger = React.forwardRef<TooltipTriggerElement, TooltipTriggerProps>(
@@ -470,8 +478,8 @@ const [VisuallyHiddenContentContextProvider, useVisuallyHiddenContentContext] =
   createTooltipContext(TOOLTIP_NAME, { isInside: false });
 
 type TooltipContentImplElement = React.ElementRef<typeof PopperPrimitive.Content>;
-type DismissableLayerProps = Radix.ComponentPropsWithoutRef<typeof DismissableLayer>;
-type PopperContentProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Content>;
+type DismissableLayerProps = React.ComponentPropsWithoutRef<typeof DismissableLayer>;
+type PopperContentProps = React.ComponentPropsWithoutRef<typeof PopperPrimitive.Content>;
 interface TooltipContentImplProps extends Omit<PopperContentProps, 'onPlaced'> {
   /**
    * A more descriptive label for accessibility purpose
@@ -569,7 +577,7 @@ TooltipContent.displayName = CONTENT_NAME;
 const ARROW_NAME = 'TooltipArrow';
 
 type TooltipArrowElement = React.ElementRef<typeof PopperPrimitive.Arrow>;
-type PopperArrowProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
+type PopperArrowProps = React.ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
 interface TooltipArrowProps extends PopperArrowProps {}
 
 const TooltipArrow = React.forwardRef<TooltipArrowElement, TooltipArrowProps>(
@@ -755,6 +763,7 @@ export {
   Arrow,
 };
 export type {
+  TooltipProviderProps,
   TooltipProps,
   TooltipTriggerProps,
   TooltipPortalProps,
